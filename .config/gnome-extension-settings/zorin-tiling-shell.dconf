@@ -1,0 +1,22 @@
+[/]
+cycle-layouts-backward=['<Shift>']
+edge-tiling-mode='default'
+edge-tiling-offset=uint32 1
+enable-autotiling=false
+focus-window-down=['<Super>Down']
+focus-window-left=['<Super>Left']
+focus-window-right=['<Super>Right']
+focus-window-up=['<Super>Up']
+last-version-name-installed='17.0'
+layouts-json='[{"id":"Layout 1","tiles":[{"x":0,"y":0,"width":0.5,"height":1,"groups":[1]},{"x":0.5,"y":0,"width":0.5,"height":1,"groups":[1]}]},{"id":"8557128","tiles":[{"x":0,"y":0,"width":1,"height":0.5203171456888008,"groups":[2]},{"x":0,"y":0.5203171456888008,"width":1,"height":0.47968285431119934,"groups":[2]}]},{"id":"Layout 3","tiles":[{"x":0,"y":0,"width":0.67,"height":1,"groups":[1]},{"x":0.67,"y":0,"width":0.33,"height":1,"groups":[1]}]},{"id":"Layout 5","tiles":[{"x":0,"y":0,"width":0.5,"height":1,"groups":[1]},{"x":0.5,"y":0,"width":0.5,"height":0.5,"groups":[2,1]},{"x":0.5,"y":0.5,"width":0.5,"height":0.5,"groups":[2,1]}]},{"id":"Layout 2","tiles":[{"x":0,"y":0,"width":0.5,"height":0.5,"groups":[1,3]},{"x":0.5,"y":0,"width":0.5,"height":0.5,"groups":[2,1]},{"x":0.5,"y":0.5,"width":0.5,"height":0.5,"groups":[2,1]},{"x":0,"y":0.5,"width":0.5,"height":0.5,"groups":[3,1]}]},{"id":"Layout 4","tiles":[{"x":0,"y":0,"width":0.333,"height":1,"groups":[1]},{"x":0.333,"y":0,"width":0.333,"height":1,"groups":[2,1]},{"x":0.666,"y":0,"width":0.333,"height":1,"groups":[2]}]},{"id":"Layout 6","tiles":[{"x":0,"y":0,"width":0.22,"height":0.5,"groups":[1,2]},{"x":0,"y":0.5,"width":0.22,"height":0.5,"groups":[1,2]},{"x":0.22,"y":0,"width":0.56,"height":1,"groups":[2,3]},{"x":0.78,"y":0,"width":0.22,"height":0.5,"groups":[3,4]},{"x":0.78,"y":0.5,"width":0.22,"height":0.5,"groups":[3,4]}]}]'
+move-window-down=['<Shift><Super>Down']
+move-window-left=['<Shift><Super>Left']
+move-window-right=['<Shift><Super>Right']
+move-window-up=['<Shift><Super>Up']
+override-alt-tab=false
+quarter-tiling-threshold=uint32 50
+resize-complementing-windows=true
+selected-layouts=[['Layout 3', 'Layout 1'], ['Layout 3', '8557128']]
+show-indicator=false
+snap-assist-sync-layout=true
+window-use-custom-border-color=false

@@ -1,0 +1,66 @@
+/* Solrojo: subtle transparency for Nautilus only. */
+nautilus-window,
+nautilus-window.background,
+window.nautilus-window {
+  background-color: rgba(23, 18, 31, 0.95);
+  background-image: none;
+}
+
+nautilus-window .view,
+nautilus-window gridview,
+nautilus-window columnview,
+nautilus-window listview,
+nautilus-window scrolledwindow,
+nautilus-window viewport {
+  background-color: transparent;
+  background-image: none;
+}
+
+nautilus-window headerbar,
+nautilus-window toolbarview,
+nautilus-window .toolbar {
+  background-color: rgba(18, 13, 26, 0.28);
+  background-image: none;
+  box-shadow: none;
+}
+
+nautilus-window placessidebar,
+nautilus-window .navigation-sidebar {
+  background-color: rgba(18, 13, 26, 0.34);
+  background-image: none;
+}
+
+nautilus-window separator {
+  background-color: rgba(135, 88, 232, 0.22);
+}
+
+/* Zorin Violet: application accents. */
+@define-color accent_bg_color #6d28d9;
+@define-color accent_fg_color #ffffff;
+@define-color accent_color #a78bfa;
+@define-color window_bg_color #100b1c;
+@define-color window_fg_color #e6dff5;
+@define-color view_bg_color #0e0918;
+@define-color view_fg_color #e6dff5;
+@define-color headerbar_bg_color #171022;
+@define-color headerbar_fg_color #e6dff5;
+
+/* Embedded confirmation dialogs have no separate window frame. */
+dialog.alert.floating sheet {
+  border: 2px solid #8758e8;
+}
+
+/* Replace the default outer rim on standalone confirmation windows. */
+window.messagedialog,
+window.dialog-window.alert,
+window.dialog.message.csd {
+  outline: none;
+  box-shadow: 0 3px 12px 1px rgba(0, 0, 0, 0.4), 0 0 0 2px #8758e8;
+}
+
+/* Violet file chooser rim. */
+window.filechooser,
+window.dialog.filechooser {
+  outline: none;
+  box-shadow: 0 3px 12px 1px rgba(0, 0, 0, 0.4), 0 0 0 2px #8758e8;
+}

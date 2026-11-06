@@ -1,0 +1,14 @@
+show=drun
+width=650
+height=430
+font=JetBrains Mono 12
+prompt=Buscar aplicación...
+normal_window=true
+location=center
+image_size=36
+allow_images=true
+allow_markup=true
+matching=multi-contains
+insensitive=true
+drun-display_generic=true
+single_click=true

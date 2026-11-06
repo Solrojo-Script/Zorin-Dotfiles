@@ -1,0 +1,6 @@
+[/]
+check-x11wayland=true
+show-home=false
+show-network-volumes=false
+show-trash=true
+show-volumes=false

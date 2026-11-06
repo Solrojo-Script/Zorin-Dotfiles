@@ -1,0 +1,34 @@
+/* Zorin Violet desktop icon menus. */
+menu, .context-menu {
+  background-color: #100b1c;
+  background-image: none;
+  color: #e6dff5;
+  border: 1px solid #8758e8;
+  border-radius: 12px;
+}
+
+menu menuitem:hover,
+menu menuitem:focus,
+.context-menu menuitem:hover,
+.context-menu menuitem:focus {
+  background-color: #34204e;
+  background-image: none;
+  color: #f1edff;
+}
+
+menu separator, .context-menu separator {
+  background-color: #503275;
+}
+
+.desktop-icons-selected,
+.desktop-icons-keyboard-selected:not(:backdrop) {
+  background-color: rgba(109, 40, 217, 0.42);
+  border-color: #8758e8;
+}
+
+/* Violet file chooser rim. */
+window.filechooser,
+window.dialog.filechooser {
+  outline: none;
+  box-shadow: 0 3px 12px 1px rgba(0, 0, 0, 0.4), 0 0 0 2px #8758e8;
+}
