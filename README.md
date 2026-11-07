@@ -13,7 +13,8 @@ terminal in the folder. Preview the changes, then run the installer.
 
 Run as your regular desktop user. The installer requests administrator
 authorization through sudo to install Kitty, Wofi, Nautilus, JetBrains Mono,
-wl-clipboard and dconf-cli from the distribution package manager.
+wl-clipboard, dconf-cli, PyGObject and the GNOME Shell extensions package
+from the distribution package manager. The latter provides User Themes.
 
 Existing configuration files are backed up before replacement. Backups are
 stored under XDG_STATE_HOME/zorin-violet-dotfiles, or
@@ -23,7 +24,9 @@ files that did not exist before installation.
 
 Saved extension preferences are imported only for extensions already installed.
 Install the extensions separately if you want to restore their preferences.
-User Themes preferences also require the ZorinViolet theme to be installed.
+The bundled ZorinViolet theme is installed automatically, and User Themes is
+enabled to apply it to the top bar. Log out and back in after installation.
+If the Extensions app has its master switch turned off, enable it there.
 
 Restart Kitty and Wofi afterward. Log out and back in for desktop styling.
 
@@ -42,14 +45,15 @@ The bundle includes saved preferences for the following extensions:
 
 These preferences are stored under .config/gnome-extension-settings. The
 installer imports them only when the corresponding extension is installed.
-Missing extensions must be installed separately. User Themes preferences also
-require the ZorinViolet theme to be installed.
+Missing extensions must be installed separately, except User Themes, which is
+provided by the package installer and enabled automatically with ZorinViolet.
 
 ## Options
 
 - --dry-run lists the planned changes without modifying the system.
 - --skip-packages copies configurations without installing applications.
-- --skip-extension-settings skips importing extension preferences.
+- --skip-extension-settings skips the optional extension preference imports.
+  The bundled shell theme and User Themes activation are still applied.
 
 ## Restore a backup
 
@@ -64,3 +68,13 @@ the following commands from your regular desktop session.
     dconf load /org/gnome/shell/extensions/dash-to-dock/ < extension-settings/dash-to-dock.dconf
 
 Previous extension preferences are saved under extension-settings in the backup.
+
+## Included theme files
+
+The complete ZorinViolet theme is bundled under .local/share/themes/ZorinViolet.
+Copy this hidden directory along with .config when moving the dotfiles to a VM.
+The top bar styling lives in gnome-shell/gnome-shell.css inside that theme.
+
+Existing themes are backed up under .local/share/themes in the backup directory.
+User Themes preferences and the enabled and disabled extension lists are also
+backed up before the installer changes them.

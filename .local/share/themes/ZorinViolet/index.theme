@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=X-GNOME-Metatheme
+Name=ZorinViolet
+Comment=The lavender outline desktop theme for Zorin OS
+Encoding=UTF-8
+
+[X-GNOME-Metatheme]
+GtkTheme=ZorinViolet
+MetacityTheme=ZorinViolet
+IconTheme=Tela-purple-dark
+CursorTheme=Adwaita
+ButtonLayout=:minimize,maximize,close
