@@ -26,7 +26,8 @@ Saved extension preferences are imported only for extensions already installed.
 Install the extensions separately if you want to restore their preferences.
 The bundled ZorinViolet theme is installed automatically, and User Themes is
 enabled to apply it to the top bar. Log out and back in after installation.
-If the Extensions app has its master switch turned off, enable it there.
+The installer turns on the Extensions master switch and saves its previous value.
+It reloads User Themes when the running GNOME session already knows about it.
 
 Restart Kitty and Wofi afterward. Log out and back in for desktop styling.
 
@@ -78,3 +79,28 @@ The top bar styling lives in gnome-shell/gnome-shell.css inside that theme.
 Existing themes are backed up under .local/share/themes in the backup directory.
 User Themes preferences and the enabled and disabled extension lists are also
 backed up before the installer changes them.
+
+## Top bar still uses the default appearance
+
+After logging out and back in, open a terminal in the dotfiles folder and run:
+
+    python3 install.py --check
+
+The output shows the first matching theme file, the selected theme name,
+the extensions master switch and the live User Themes extension status.
+The selected theme should be ZorinViolet and User Themes should be ACTIVE.
+A theme under ~/.themes takes precedence over ~/.local/share/themes; check
+the reported path if you have an older copy installed.
+
+## Window gaps
+
+Window Padding must be installed for maximized windows to keep margins from the
+screen edges. Get it from https://extensions.gnome.org/extension/11381/window-padding/
+and rerun the installer. The installer enables it when installed. Zorin Tiling
+Shell controls gaps in tiled layouts.
+
+The saved values are 4 pixels at the top and 8 pixels at the other screen edges
+for Window Padding, plus 4 pixels for both inner and outer Tiling Shell gaps.
+These values are exported explicitly so another installation uses the same gaps.
+Extension settings can be imported before GNOME discovers newly installed
+extensions. Log out and back in afterward.

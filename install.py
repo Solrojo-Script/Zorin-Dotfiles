@@ -27,6 +27,32 @@ EXTENSIONS = {
 }
 
 
+def shell_is_running():
+    from gi.repository import Gio, GLib
+
+    try:
+        bus = Gio.bus_get_sync(Gio.BusType.SESSION, None)
+        reply = bus.call_sync('org.freedesktop.DBus', '/org/freedesktop/DBus',
+                              'org.freedesktop.DBus', 'NameHasOwner',
+                              GLib.Variant('(s)', ('org.gnome.Shell',)),
+                              GLib.VariantType.new('(b)'), Gio.DBusCallFlags.NONE, 2000, None)
+        return reply.unpack()[0]
+    except GLib.Error:
+        return False
+
+
+def installed_extension_ids():
+    from gi.repository import GLib
+
+    directories = [GLib.get_user_data_dir(), *GLib.get_system_data_dirs()]
+    installed = set()
+    for directory in directories:
+        path = Path(directory) / 'gnome-shell/extensions'
+        if path.is_dir():
+            installed.update(metadata.parent.name for metadata in path.glob('*/metadata.json'))
+    return installed
+
+
 def install_theme(source, backup):
     data_home = Path(os.environ.get('XDG_DATA_HOME', Path.home() / '.local/share'))
     target = data_home / 'themes/ZorinViolet'
@@ -64,31 +90,78 @@ def activate_shell_theme(backup):
         shell.get_value('enabled-extensions').print_(True) + '\n')
     (backup / 'disabled-extensions.txt').write_text(
         shell.get_value('disabled-extensions').print_(True) + '\n')
+    (backup / 'disable-user-extensions.txt').write_text(
+        shell.get_value('disable-user-extensions').print_(True) + '\n')
     subprocess.run(['dconf', 'write', path + 'name', "'ZorinViolet'"], check=True)
     uuid = EXTENSIONS['user-theme']
+    required = [uuid]
+    if EXTENSIONS['window-padding'] in installed_extension_ids():
+        required.append(EXTENSIONS['window-padding'])
+    else:
+        print('Window Padding is missing. Maximized-window gaps require this extension:')
+        print('https://extensions.gnome.org/extension/11381/window-padding/')
     enabled = shell.get_strv('enabled-extensions')
-    if uuid not in enabled:
-        enabled.append(uuid)
+    for extension in required:
+        if extension not in enabled:
+            enabled.append(extension)
     if not shell.set_strv('enabled-extensions', enabled):
         raise RuntimeError('GNOME could not enable User Themes.')
-    disabled = [item for item in shell.get_strv('disabled-extensions') if item != uuid]
+    disabled = [item for item in shell.get_strv('disabled-extensions') if item not in required]
     if not shell.set_strv('disabled-extensions', disabled):
         raise RuntimeError('GNOME could not update disabled extensions.')
+    if not shell.set_boolean('disable-user-extensions', False):
+        raise RuntimeError('GNOME could not turn on extensions.')
     Gio.Settings.sync()
-    if shell.get_boolean('disable-user-extensions'):
-        print('Enable the master extensions switch in the Extensions app to load the theme.')
-    print('Selected ZorinViolet and enabled User Themes. Log out and back in to load the top bar theme.')
+    if shutil.which('gnome-extensions') and shell_is_running():
+        environment = {**os.environ, 'LC_ALL': 'C'}
+        status = subprocess.run(['gnome-extensions', 'info', uuid],
+                                capture_output=True, text=True, env=environment)
+        if status.returncode == 0:
+            # Reload an already loaded theme after replacing its stylesheet.
+            subprocess.run(['gnome-extensions', 'disable', uuid],
+                           capture_output=True, env=environment)
+            enabled_result = subprocess.run(['gnome-extensions', 'enable', uuid],
+                                            capture_output=True, env=environment)
+            if enabled_result.returncode:
+                shell.set_strv('enabled-extensions', enabled)
+                shell.set_strv('disabled-extensions', disabled)
+                Gio.Settings.sync()
+                print('GNOME could not reload User Themes. Log out and back in.')
+        else:
+            print('User Themes is not discovered by this session yet. Log out and back in.')
+    print('ZorinViolet selected. Run python3 install.py --check to check theme activation.')
+
+
+def check_theme():
+    from gi.repository import Gio
+
+    shell = Gio.Settings.new('org.gnome.shell')
+    data_home = Path(os.environ.get('XDG_DATA_HOME', Path.home() / '.local/share'))
+    candidates = [Path.home() / '.themes/ZorinViolet/gnome-shell/gnome-shell.css',
+                  data_home / 'themes/ZorinViolet/gnome-shell/gnome-shell.css']
+    for directory in os.environ.get('XDG_DATA_DIRS', '/usr/local/share:/usr/share').split(':'):
+        candidates.append(Path(directory) / 'themes/ZorinViolet/gnome-shell/gnome-shell.css')
+    stylesheet = next((path for path in candidates if path.is_file()), None)
+    uuid = EXTENSIONS['user-theme']
+    selected = subprocess.check_output(
+        ['dconf', 'read', '/org/gnome/shell/extensions/user-theme/name'], text=True).strip()
+    print(f'Theme file used by User Themes: {stylesheet or "MISSING"}')
+    print(f'Selected theme: {selected or "DEFAULT"}')
+    print(f'Extensions switch enabled: {not shell.get_boolean("disable-user-extensions")}')
+    print(f'User Themes enabled: {uuid in shell.get_strv("enabled-extensions")}')
+    print(f'User Themes explicitly disabled: {uuid in shell.get_strv("disabled-extensions")}')
+    if shutil.which('gnome-extensions') and shell_is_running():
+        subprocess.run(['gnome-extensions', 'info', uuid],
+                       env={**os.environ, 'LC_ALL': 'C'})
+    else:
+        print('Live GNOME session unavailable. Log in to GNOME and repeat this check.')
 
 
 def restore_extension_settings(source, backup):
-    if not shutil.which('gnome-extensions') or not shutil.which('dconf'):
-        print('Extension settings skipped. GNOME tools are unavailable.')
+    if not shutil.which('dconf'):
+        print('Extension settings skipped. dconf is unavailable.')
         return
-    result = subprocess.run(['gnome-extensions', 'list'], capture_output=True, text=True)
-    if result.returncode:
-        print('Extension settings skipped. No GNOME session is available.')
-        return
-    installed = set(result.stdout.splitlines())
+    installed = installed_extension_ids()
     for settings in sorted((source / '.config/gnome-extension-settings').glob('*.dconf')):
         name = settings.stem
         if name == 'user-theme':
@@ -110,9 +183,13 @@ def main():
     parser.add_argument('--dry-run', action='store_true')
     parser.add_argument('--skip-packages', action='store_true')
     parser.add_argument('--skip-extension-settings', action='store_true')
+    parser.add_argument('--check', action='store_true', help='show theme activation status without changing settings')
     args = parser.parse_args()
     if os.geteuid() == 0:
         parser.exit(1, 'Run as your desktop user. Only package installation uses sudo.\n')
+    if args.check:
+        check_theme()
+        return
     source = Path(__file__).resolve().parent
     config = Path(os.environ.get('XDG_CONFIG_HOME', Path.home() / '.config'))
     state = Path(os.environ.get('XDG_STATE_HOME', Path.home() / '.local/state'))

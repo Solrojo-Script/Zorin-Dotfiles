@@ -1,4 +1,6 @@
 [/]
+inner-gaps=uint32 4
+outer-gaps=uint32 4
 cycle-layouts-backward=['<Shift>']
 edge-tiling-mode='default'
 edge-tiling-offset=uint32 1
