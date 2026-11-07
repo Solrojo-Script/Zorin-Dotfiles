@@ -27,6 +27,24 @@ User Themes preferences also require the ZorinViolet theme to be installed.
 
 Restart Kitty and Wofi afterward. Log out and back in for desktop styling.
 
+## Included extension settings
+
+The bundle includes saved preferences for the following extensions:
+
+- Blur My Shell — blur-my-shell@aunetx
+- Dash to Dock — dash-to-dock@micxgx.gmail.com
+- System Monitor — system-monitor@gnome-shell-extensions.gcampax.github.com
+- User Themes — user-theme@gnome-shell-extensions.gcampax.github.com
+- Window Padding — window-padding@pvlamkhtn.github.io
+- Zorin AppIndicator — zorin-appindicator@zorinos.com
+- Zorin Desktop Icons — zorin-desktop-icons@zorinos.com
+- Zorin Tiling Shell — zorin-tiling-shell@zorinos.com
+
+These preferences are stored under .config/gnome-extension-settings. The
+installer imports them only when the corresponding extension is installed.
+Missing extensions must be installed separately. User Themes preferences also
+require the ZorinViolet theme to be installed.
+
 ## Options
 
 - --dry-run lists the planned changes without modifying the system.
