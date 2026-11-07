@@ -3638,16 +3638,16 @@ stage { color: #e6dff5; }
   box-shadow: none !important;
 }
 #overviewGroup .apps-scroll-view .icon-grid .overview-tile:hover {
-  background-color: #34204e !important;
+  background-color: rgba(167, 139, 250, 0.22) !important;
   border-color: #8758e8 !important;
 }
 #overviewGroup .apps-scroll-view .icon-grid .overview-tile:active,
 #overviewGroup .apps-scroll-view .icon-grid .overview-tile:selected {
-  background-color: #4c2382 !important;
+  background-color: rgba(167, 139, 250, 0.34) !important;
   border-color: #a78bfa !important;
 }
 #overviewGroup .apps-scroll-view .icon-grid .overview-tile:focus {
-  background-color: #34204e !important;
+  background-color: rgba(167, 139, 250, 0.22) !important;
   border-color: #c4b5fd !important;
   box-shadow: inset 0 0 0 1px #c4b5fd !important;
 }
