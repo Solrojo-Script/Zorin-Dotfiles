@@ -1,6 +1,6 @@
 # Zorin Violet dotfiles
 
-Configuration files for Kitty, Wofi, GTK 3 and GTK 4, plus saved preferences
+Configuration files for Kitty, Bash, Wofi, GTK 3 and GTK 4, plus saved preferences
 for the GNOME extensions used by this desktop. Nautilus shares the GTK styling.
 
 ## Installation
@@ -13,7 +13,7 @@ terminal in the folder. Preview the changes, then run the installer.
 
 Run as your regular desktop user. The installer requests administrator
 authorization through sudo to install Kitty, Wofi, Nautilus, JetBrains Mono,
-wl-clipboard, dconf-cli, PyGObject and the GNOME Shell extensions package
+Cousine (fonts-croscore), wl-clipboard, dconf-cli, PyGObject and the GNOME Shell extensions package
 from the distribution package manager. The latter provides User Themes.
 
 Existing configuration files are backed up before replacement. Backups are
@@ -131,3 +131,17 @@ repository directory, run:
 The installer includes the per-monitor background component, so a fresh Zorin
 VM can follow its own desktop wallpaper. Administrator authorization is needed
 once. Future local wallpaper changes are synchronized automatically.
+
+The dock uses its rounded themed background with the additional Blur My Shell
+dock layer disabled, avoiding a rectangular surface behind the rounded corners.
+
+## Kitty font and prompt
+
+Kitty uses the bundled current-theme.conf color palette and the Cousine font.
+The installer includes fonts-croscore to provide the same font in a clean VM.
+
+The two-line colored prompt is provided by Bash. Its configuration is stored
+in .config/bash/violet-prompt.sh. The installer backs up ~/.bashrc and adds a
+marked block that sources this file. Running the installer again updates the
+same block. Close and reopen Kitty to load the font and prompt. To undo the
+prompt integration, restore .bashrc from the backup or remove its marked block.

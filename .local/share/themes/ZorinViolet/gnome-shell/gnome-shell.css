@@ -3591,3 +3591,20 @@ stage { color: #e6dff5; }
   background-color: #8758e8;
   color: #ffffff;
 }
+
+/* Dark user name for light lock-screen wallpapers. */
+.unlock-dialog .user-widget .user-widget-label {
+  background-color: #1b122b;
+  color: #f1edff;
+  border-radius: 8px;
+  padding: 4px 12px;
+  text-shadow: none;
+}
+
+/* Keep the dock's outer layout containers transparent. */
+#dashtodockContainer,
+#dashtodockContainer #dash {
+  background-color: transparent !important;
+  background-gradient-direction: none;
+  box-shadow: none;
+}

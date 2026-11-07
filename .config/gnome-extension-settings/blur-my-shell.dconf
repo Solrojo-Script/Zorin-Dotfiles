@@ -13,7 +13,7 @@ blur=false
 pipeline='pipeline_default'
 
 [dash-to-dock]
-blur=true
+blur=false
 override-background=false
 pipeline='pipeline_default'
 static-blur=false

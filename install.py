@@ -13,12 +13,13 @@ import zipfile
 from pathlib import Path
 
 PACKAGES = [
-    'kitty', 'wofi', 'nautilus', 'fonts-jetbrains-mono', 'wl-clipboard',
+    'kitty', 'wofi', 'nautilus', 'fonts-jetbrains-mono', 'fonts-croscore', 'wl-clipboard',
     'dconf-cli', 'python3-gi', 'gnome-shell-extensions',
 ]
 FILES = [
     'kitty/kitty.conf', 'kitty/current-theme.conf', 'wofi/config', 'wofi/style.css',
     'gtk-3.0/gtk.css', 'gtk-3.0/settings.ini', 'gtk-4.0/gtk.css', 'gtk-4.0/settings.ini',
+    'bash/violet-prompt.sh',
 ]
 EXTENSIONS = {
     'blur-my-shell': 'blur-my-shell@aunetx',
@@ -31,6 +32,37 @@ EXTENSIONS = {
     'zorin-tiling-shell': 'zorin-tiling-shell@zorinos.com',
 }
 REQUIRED_EXTENSIONS = ('dash-to-dock', 'window-padding', 'blur-my-shell')
+
+
+def install_prompt(backup):
+    bashrc = Path.home() / '.bashrc'
+    previous = bashrc.read_text() if bashrc.exists() else ''
+    if bashrc.exists() or bashrc.is_symlink():
+        shutil.copy2(bashrc, backup / '.bashrc', follow_symlinks=False)
+    else:
+        (backup / 'new-bashrc.txt').write_text(str(bashrc) + '\n')
+    marker = '# BEGIN Zorin Violet prompt'
+    block = '''# BEGIN Zorin Violet prompt
+if [ -r "${XDG_CONFIG_HOME:-$HOME/.config}/bash/violet-prompt.sh" ]; then
+    . "${XDG_CONFIG_HOME:-$HOME/.config}/bash/violet-prompt.sh"
+fi
+# END Zorin Violet prompt'''
+    if marker in previous:
+        updated, count = re.subn(
+            r'# BEGIN Zorin Violet prompt\n.*?# END Zorin Violet prompt',
+            lambda _: block, previous, count=1, flags=re.S)
+        if count != 1:
+            raise SystemExit('The existing Violet prompt block is incomplete. Check your .bashrc.')
+    else:
+        updated = previous.rstrip() + '\n\n' + block + '\n'
+    with tempfile.NamedTemporaryFile(dir=bashrc.parent, delete=False) as temporary:
+        staged = Path(temporary.name)
+    try:
+        staged.write_text(updated)
+        staged.chmod(bashrc.stat().st_mode & 0o777 if bashrc.exists() else 0o644)
+        staged.replace(bashrc)
+    finally:
+        staged.unlink(missing_ok=True)
 
 
 def install_required_extensions():
@@ -252,6 +284,7 @@ def main():
         for name in FILES:
             print(f'Copy {name} to {config / name}')
         print('Install the bundled ZorinViolet theme and enable User Themes.')
+        print('Add the bundled Bash prompt to ~/.bashrc, with a backup.')
         print(f'Backups will be stored under {state / "zorin-violet-dotfiles"}')
         if not args.skip_extension_settings:
             print('Import saved preferences for installed GNOME extensions.')
@@ -294,6 +327,7 @@ def main():
             staged.replace(target)
         finally:
             staged.unlink(missing_ok=True)
+    install_prompt(backup)
     if not args.skip_extension_settings:
         restore_extension_settings(source, backup)
     activate_shell_theme(backup)
