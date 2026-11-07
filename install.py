@@ -1,10 +1,15 @@
 #!/usr/bin/env python3
 """Install the Zorin Violet dotfiles and their application dependencies."""
 import argparse
+import json
 import os
+import re
 import shutil
 import subprocess
 import tempfile
+import urllib.parse
+import urllib.request
+import zipfile
 from pathlib import Path
 
 PACKAGES = [
@@ -25,6 +30,39 @@ EXTENSIONS = {
     'zorin-desktop-icons': 'zorin-desktop-icons@zorinos.com',
     'zorin-tiling-shell': 'zorin-tiling-shell@zorinos.com',
 }
+REQUIRED_EXTENSIONS = ('dash-to-dock', 'window-padding', 'blur-my-shell')
+
+
+def install_required_extensions():
+    installed = installed_extension_ids()
+    missing = [EXTENSIONS[name] for name in REQUIRED_EXTENSIONS if EXTENSIONS[name] not in installed]
+    if not missing:
+        return
+    version = subprocess.check_output(['gnome-shell', '--version'], text=True)
+    match = re.search(r'\b(\d+)\.', version)
+    if not match:
+        raise SystemExit('Could not determine the GNOME Shell version.')
+    major = match.group(1)
+    for uuid in missing:
+        query = urllib.parse.urlencode({'uuid': uuid, 'shell_version': major})
+        try:
+            with urllib.request.urlopen('https://extensions.gnome.org/extension-info/?' + query, timeout=30) as response:
+                info = json.load(response)
+            download = urllib.parse.urljoin('https://extensions.gnome.org', info['download_url'])
+            if not download.startswith('https://extensions.gnome.org/download-extension/'):
+                raise ValueError('Unexpected extension download URL')
+            with tempfile.TemporaryDirectory() as directory:
+                archive = Path(directory) / 'extension.zip'
+                with urllib.request.urlopen(download, timeout=60) as response:
+                    archive.write_bytes(response.read())
+                with zipfile.ZipFile(archive) as package:
+                    metadata = json.loads(package.read('metadata.json'))
+                if metadata['uuid'] != uuid or major not in metadata['shell-version']:
+                    raise ValueError('The extension package is incompatible with this GNOME version')
+                subprocess.run(['gnome-extensions', 'install', str(archive)], check=True)
+            print(f'Installed {uuid} from extensions.gnome.org.')
+        except (OSError, ValueError, KeyError, subprocess.CalledProcessError, zipfile.BadZipFile) as error:
+            raise SystemExit(f'Could not install {uuid}: {error}') from error
 
 
 def shell_is_running():
@@ -95,20 +133,25 @@ def activate_shell_theme(backup):
     subprocess.run(['dconf', 'write', path + 'name', "'ZorinViolet'"], check=True)
     uuid = EXTENSIONS['user-theme']
     required = [uuid]
-    if EXTENSIONS['window-padding'] in installed_extension_ids():
-        required.append(EXTENSIONS['window-padding'])
-    else:
+    installed = installed_extension_ids()
+    required.extend(EXTENSIONS[name] for name in REQUIRED_EXTENSIONS if EXTENSIONS[name] in installed)
+    if EXTENSIONS['window-padding'] not in installed:
         print('Window Padding is missing. Maximized-window gaps require this extension:')
         print('https://extensions.gnome.org/extension/11381/window-padding/')
     enabled = shell.get_strv('enabled-extensions')
     for extension in required:
         if extension not in enabled:
             enabled.append(extension)
-    if not shell.set_strv('enabled-extensions', enabled):
-        raise RuntimeError('GNOME could not enable User Themes.')
     disabled = [item for item in shell.get_strv('disabled-extensions') if item not in required]
+    # Match the source desktop's dock instead of running two docks together.
+    if EXTENSIONS['dash-to-dock'] in required:
+        conflicts = {'zorin-taskbar@zorinos.com', 'zorin-dash@zorinos.com', 'ubuntu-dock@ubuntu.com'}
+        enabled = [item for item in enabled if item not in conflicts]
+        disabled = list(dict.fromkeys([*disabled, *sorted(conflicts)]))
     if not shell.set_strv('disabled-extensions', disabled):
         raise RuntimeError('GNOME could not update disabled extensions.')
+    if not shell.set_strv('enabled-extensions', enabled):
+        raise RuntimeError('GNOME could not enable the required desktop extensions.')
     if not shell.set_boolean('disable-user-extensions', False):
         raise RuntimeError('GNOME could not turn on extensions.')
     Gio.Settings.sync()
@@ -150,6 +193,10 @@ def check_theme():
     print(f'Extensions switch enabled: {not shell.get_boolean("disable-user-extensions")}')
     print(f'User Themes enabled: {uuid in shell.get_strv("enabled-extensions")}')
     print(f'User Themes explicitly disabled: {uuid in shell.get_strv("disabled-extensions")}')
+    installed = installed_extension_ids()
+    for name in REQUIRED_EXTENSIONS:
+        uuid = EXTENSIONS[name]
+        print(f'{name} installed: {uuid in installed}; enabled: {uuid in shell.get_strv("enabled-extensions")}')
     if shutil.which('gnome-extensions') and shell_is_running():
         subprocess.run(['gnome-extensions', 'info', uuid],
                        env={**os.environ, 'LC_ALL': 'C'})
@@ -201,6 +248,7 @@ def main():
     if args.dry_run:
         if not args.skip_packages:
             print('Install packages: ' + ', '.join(PACKAGES))
+            print('Install missing Dash to Dock, Window Padding and Blur My Shell from extensions.gnome.org.')
         for name in FILES:
             print(f'Copy {name} to {config / name}')
         print('Install the bundled ZorinViolet theme and enable User Themes.')
@@ -213,6 +261,7 @@ def main():
             parser.exit(1, 'Package installation requires apt-get (Zorin OS / Ubuntu).\n')
         subprocess.run(['sudo', 'apt-get', 'update'], check=True)
         subprocess.run(['sudo', 'apt-get', 'install', '-y', *PACKAGES], check=True)
+        install_required_extensions()
     if not shutil.which('dconf'):
         parser.exit(1, 'Install dconf-cli before using --skip-packages.\n')
     from gi.repository import Gio

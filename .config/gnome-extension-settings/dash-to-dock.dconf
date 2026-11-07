@@ -31,7 +31,6 @@ max-alpha=0.80000000000000004
 middle-click-action='launch'
 multi-monitor=true
 preferred-monitor=-2
-preferred-monitor-by-connector='eDP-1'
 preview-size-scale=0.0
 running-indicator-style='DOTS'
 scroll-action='do-nothing'

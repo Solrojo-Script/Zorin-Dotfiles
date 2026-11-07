@@ -22,8 +22,11 @@ stored under XDG_STATE_HOME/zorin-violet-dotfiles, or
 prints the exact backup directory. Each backup includes new-files.txt listing
 files that did not exist before installation.
 
-Saved extension preferences are imported only for extensions already installed.
-Install the extensions separately if you want to restore their preferences.
+The installer downloads missing Dash to Dock, Window Padding and Blur My Shell
+from extensions.gnome.org, choosing a package for the installed GNOME version.
+It enables them and disables Zorin Taskbar, Zorin Dash and Ubuntu Dock so they
+do not compete with Dash to Dock. Other extension preferences are imported
+when the corresponding extensions are already installed.
 The bundled ZorinViolet theme is installed automatically, and User Themes is
 enabled to apply it to the top bar. Log out and back in after installation.
 The installer turns on the Extensions master switch and saves its previous value.
@@ -46,13 +49,14 @@ The bundle includes saved preferences for the following extensions:
 
 These preferences are stored under .config/gnome-extension-settings. The
 installer imports them only when the corresponding extension is installed.
-Missing extensions must be installed separately, except User Themes, which is
-provided by the package installer and enabled automatically with ZorinViolet.
+User Themes comes from the system package installer. Dash to Dock, Window
+Padding and Blur My Shell are downloaded from the official GNOME extension
+catalog when missing. Other extensions must be installed separately.
 
 ## Options
 
 - --dry-run lists the planned changes without modifying the system.
-- --skip-packages copies configurations without installing applications.
+- --skip-packages copies configurations without installing applications or downloading extensions.
 - --skip-extension-settings skips the optional extension preference imports.
   The bundled shell theme and User Themes activation are still applied.
 
@@ -94,13 +98,36 @@ the reported path if you have an older copy installed.
 
 ## Window gaps
 
-Window Padding must be installed for maximized windows to keep margins from the
-screen edges. Get it from https://extensions.gnome.org/extension/11381/window-padding/
-and rerun the installer. The installer enables it when installed. Zorin Tiling
-Shell controls gaps in tiled layouts.
+Window Padding keeps margins around maximized windows. The installer downloads
+and enables it automatically. Zorin Tiling Shell controls gaps in tiled layouts.
 
 The saved values are 4 pixels at the top and 8 pixels at the other screen edges
 for Window Padding, plus 4 pixels for both inner and outer Tiling Shell gaps.
 These values are exported explicitly so another installation uses the same gaps.
 Extension settings can be imported before GNOME discovers newly installed
 extensions. Log out and back in afterward.
+
+## Match the desktop dock
+
+Copy the complete folder, including .config and .local, before running install.py.
+The bundled theme provides 16-pixel rounded corners and violet dock borders.
+The dock preference export disables the fixed, full-width dock appearance and
+uses the bottom auto-hiding Dash to Dock layout. Physical monitor connector
+names are excluded so a VM can use its own display.
+
+The installer enables User Themes, Dash to Dock, Window Padding and Blur My Shell.
+It does not require Rounded Window Corners to round the dock. After installation,
+log out and back in. Run python3 install.py --check to check which extensions
+are installed and enabled.
+
+## GDM wallpaper synchronization
+
+Install Violet Windows separately using its install.sh script. In its preferences,
+choose Enable sync under Follow desktop wallpaper. Alternatively, from its
+repository directory, run:
+
+    sudo python3 install-gdm.py --sync-wallpaper
+
+The installer includes the per-monitor background component, so a fresh Zorin
+VM can follow its own desktop wallpaper. Administrator authorization is needed
+once. Future local wallpaper changes are synchronized automatically.
