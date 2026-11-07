@@ -3592,13 +3592,13 @@ stage { color: #e6dff5; }
   color: #ffffff;
 }
 
-/* Dark user name for light lock-screen wallpapers. */
+/* Keep the selected user's name directly on the wallpaper. */
 .unlock-dialog .user-widget .user-widget-label {
-  background-color: #1b122b;
+  background-color: transparent !important;
   color: #f1edff;
-  border-radius: 8px;
-  padding: 4px 12px;
-  text-shadow: none;
+  border-radius: 0;
+  padding: 0;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.85);
 }
 
 /* Keep the dock's outer layout containers transparent. */
@@ -3607,4 +3607,47 @@ stage { color: #e6dff5; }
   background-color: transparent !important;
   background-gradient-direction: none;
   box-shadow: none;
+}
+
+/* A single rounded dock surface avoids rectangular shadows at its corners. */
+#dash .dash-background,
+#dashtodockContainer #dash .dash-background {
+  background-color: #0e0918 !important;
+  background-image: none !important;
+  background-gradient-direction: none;
+  border: 2px solid #8758e8 !important;
+  border-radius: 16px !important;
+  box-shadow: none !important;
+}
+
+.unlock-dialog .login-dialog-prompt-entry,
+.unlock-dialog .login-dialog-prompt-entry:hover,
+.unlock-dialog .login-dialog-prompt-entry:focus {
+  border-color: #8758e8 !important;
+}
+
+/* App-grid highlights match the dock. */
+#overviewGroup .apps-scroll-view .icon-grid .overview-tile {
+  border: 1px solid transparent !important;
+  border-radius: 10px !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+}
+#overviewGroup .apps-scroll-view .icon-grid .overview-tile .overview-icon {
+  background-color: transparent !important;
+  box-shadow: none !important;
+}
+#overviewGroup .apps-scroll-view .icon-grid .overview-tile:hover {
+  background-color: #34204e !important;
+  border-color: #8758e8 !important;
+}
+#overviewGroup .apps-scroll-view .icon-grid .overview-tile:active,
+#overviewGroup .apps-scroll-view .icon-grid .overview-tile:selected {
+  background-color: #4c2382 !important;
+  border-color: #a78bfa !important;
+}
+#overviewGroup .apps-scroll-view .icon-grid .overview-tile:focus {
+  background-color: #34204e !important;
+  border-color: #c4b5fd !important;
+  box-shadow: inset 0 0 0 1px #c4b5fd !important;
 }
