@@ -1,147 +1,138 @@
 # Zorin Violet dotfiles
 
-Configuration files for Kitty, Bash, Wofi, GTK 3 and GTK 4, plus saved preferences
-for the GNOME extensions used by this desktop. Nautilus shares the GTK styling.
+Configuration files for Kitty, Bash, Wofi, GTK 3 and GTK 4, the ZorinViolet shell theme, and optional preferences for GNOME extensions. Nautilus shares the GTK styling.
 
 ## Installation
 
-Copy the entire folder, including its hidden .config directory, and open a
-terminal in the folder. Preview the changes, then run the installer.
+Copy the entire repository, including its hidden `.config` and `.local` folders. Open a terminal in it, preview the plan, then run the installer as your regular desktop user:
 
-    python3 install.py --dry-run
-    python3 install.py
+```sh
+python3 install.py --dry-run
+python3 install.py
+```
 
-Run as your regular desktop user. The installer requests administrator
-authorization through sudo to install Kitty, Wofi, Nautilus, JetBrains Mono,
-Cousine (fonts-croscore), wl-clipboard, dconf-cli, PyGObject and the GNOME Shell extensions package
-from the distribution package manager. The latter provides User Themes.
+The installer first lists the optional extensions. **Nothing is selected by default.** Enter menu numbers or extension keys separated by commas/spaces, or press Enter to skip every extension change. After making a selection, review the exact installation, activation, preference-import and dock-replacement plan. Only `y` or `yes` at the final confirmation applies that extension plan. No, empty input, or EOF cancels the extension plan; the ordinary dotfiles installation can still continue.
 
-Existing configuration files are backed up before replacement. Backups are
-stored under XDG_STATE_HOME/zorin-violet-dotfiles, or
-~/.local/state/zorin-violet-dotfiles when XDG_STATE_HOME is unset. The installer
-prints the exact backup directory. Each backup includes new-files.txt listing
-files that did not exist before installation.
+Application dependencies are installed through the distribution package manager: Kitty, Wofi, Nautilus, JetBrains Mono, Cousine (`fonts-croscore`), `wl-clipboard`, `dconf-cli`, and PyGObject. **The broad `gnome-shell-extensions` package is not installed.** User Themes and System Monitor are individual opt-in downloads, just like the other downloadable extensions.
 
-The installer downloads missing Dash to Dock, Window Padding and Blur My Shell
-from extensions.gnome.org, choosing a package for the installed GNOME version.
-It enables them and disables Zorin Taskbar, Zorin Dash and Ubuntu Dock so they
-do not compete with Dash to Dock. Other extension preferences are imported
-when the corresponding extensions are already installed.
-The bundled ZorinViolet theme is installed automatically, and User Themes is
-enabled to apply it to the top bar. Log out and back in after installation.
-The installer turns on the Extensions master switch and saves its previous value.
-It reloads User Themes when the running GNOME session already knows about it.
+Existing files are backed up under `${XDG_STATE_HOME:-$HOME/.local/state}/zorin-violet-dotfiles/backup-*`. The installer prints the exact directory. `new-files.txt` records configurations that did not previously exist. The theme and Bash prompt integration also have backups.
 
-Restart Kitty and Wofi afterward. Log out and back in for desktop styling.
+## Optional extension choices
 
-## Included extension settings
+Only the extensions you select are installed, enabled or configured. An already installed extension is not downloaded again.
 
-The bundle includes saved preferences for the following extensions:
+1. **User Themes** (`user-theme`) — applies the bundled top bar theme.
+2. **Dash to Dock** (`dash-to-dock`) — dock layout.
+3. **Window Padding** (`window-padding`) — margins around maximized windows.
+4. **Blur My Shell** (`blur-my-shell`) — overview and panel effects.
+5. **System Monitor** (`system-monitor`) — CPU, memory and network indicator.
+6. **Zorin AppIndicator** (`zorin-appindicator`) — import preferences only if already installed.
+7. **Zorin Desktop Icons** (`zorin-desktop-icons`) — import preferences only if already installed.
+8. **Zorin Tiling Shell** (`zorin-tiling-shell`) — import preferences only if already installed.
 
-- Blur My Shell — blur-my-shell@aunetx
-- Dash to Dock — dash-to-dock@micxgx.gmail.com
-- System Monitor — system-monitor@gnome-shell-extensions.gcampax.github.com
-- User Themes — user-theme@gnome-shell-extensions.gcampax.github.com
-- Window Padding — window-padding@pvlamkhtn.github.io
-- Zorin AppIndicator — zorin-appindicator@zorinos.com
-- Zorin Desktop Icons — zorin-desktop-icons@zorinos.com
-- Zorin Tiling Shell — zorin-tiling-shell@zorinos.com
+Downloads come from `extensions.gnome.org`, with the package UUID and GNOME version checked before installation. The three Zorin extensions are not downloaded by this installer.
 
-These preferences are stored under .config/gnome-extension-settings. The
-installer imports them only when the corresponding extension is installed.
-User Themes comes from the system package installer. Dash to Dock, Window
-Padding and Blur My Shell are downloaded from the official GNOME extension
-catalog when missing. Other extensions must be installed separately.
+The installer separately asks before disabling an enabled Zorin Taskbar, Zorin Dash, or Ubuntu Dock in favor of Dash to Dock. Declining keeps those docks unchanged; Dash to Dock can be installed and configured but is not enabled. Only the conflicting docks listed in the approved plan are disabled.
 
-## Options
+The global Extensions master switch is preserved. If it is off, the installer tells you to turn it on yourself in Extensions. It does not activate unrelated extensions by changing that switch.
 
-- --dry-run lists the planned changes without modifying the system.
-- --skip-packages copies configurations without installing applications or downloading extensions.
-- --skip-extension-settings skips the optional extension preference imports.
-  The bundled shell theme and User Themes activation are still applied.
+The bundled theme files are copied with the dotfiles, but the shell theme is selected/reloaded only when **User Themes** is explicitly selected. Other extensions and their preferences remain unchanged. This installer does not install Violet Windows, Virtualbox IPs, Pangolin Status, or a GDM extension.
 
-## Restore a backup
+## Screenshots
 
-Copy the desired files from the backup's .config directory back into your
-configuration directory. Files listed in new-files.txt were newly installed.
+The following is a transcript rendered from the real selection code using an example machine state. The final extension plan was cancelled; no extensions were installed to create this image.
 
-To restore an extension's preferences, open a terminal in the backup directory
-and use the matching extension path. For example, for Dash to Dock, run
-the following commands from your regular desktop session.
+![Optional extension selection and final confirmation](docs/screenshots/extension-selection.png)
 
-    dconf reset -f /org/gnome/shell/extensions/dash-to-dock/
-    dconf load /org/gnome/shell/extensions/dash-to-dock/ < extension-settings/dash-to-dock.dconf
+## Command-line options
 
-Previous extension preferences are saved under extension-settings in the backup.
+- `--dry-run`: show a plan without prompts, downloads, package installation or writes. An extension plan is empty unless `--extensions` is supplied.
+- `--extensions user-theme,dash-to-dock`: explicitly select keys or displayed menu numbers. A final confirmation is still required unless `--yes` is supplied.
+- `--yes`: confirm the explicit selection. **It never selects all extensions** and does not authorize replacing another dock.
+- `--replace-dock`: explicitly permit disabling listed conflicting docks when selecting Dash to Dock.
+- `--skip-extensions`: skip all extension downloads, activation, theme selection and saved extension preferences. It cannot be combined with `--extensions`.
+- `--skip-packages`: skip application packages and extension downloads. Selected extensions can still be enabled/configured if already installed.
+- `--skip-extension-settings`: skip saved preference imports. Selected extensions can still be installed/enabled; selecting User Themes still selects the bundled shell theme.
+- `--check`: display the installed theme and extension status without changing anything.
 
-## Included theme files
+Examples:
 
-The complete ZorinViolet theme is bundled under .local/share/themes/ZorinViolet.
-Copy this hidden directory along with .config when moving the dotfiles to a VM.
-The top bar styling lives in gnome-shell/gnome-shell.css inside that theme.
+```sh
+# Apply only dotfiles, leaving GNOME extension settings and activation unchanged.
+python3 install.py --skip-extensions
 
-Existing themes are backed up under .local/share/themes in the backup directory.
-User Themes preferences and the enabled and disabled extension lists are also
-backed up before the installer changes them.
+# Preview an explicit choice without making changes.
+python3 install.py --dry-run --extensions user-theme,window-padding
 
-## Top bar still uses the default appearance
+# Explicit, unattended opt-in to these two extensions only.
+python3 install.py --extensions user-theme,window-padding --yes
 
-After logging out and back in, open a terminal in the dotfiles folder and run:
+# Separately authorize replacing an enabled conflicting dock.
+python3 install.py --extensions dash-to-dock --replace-dock --yes
+```
 
-    python3 install.py --check
+Restart Kitty and Wofi afterward. Log out and back in when adding GNOME extensions so Shell can discover their files.
 
-The output shows the first matching theme file, the selected theme name,
-the extensions master switch and the live User Themes extension status.
-The selected theme should be ZorinViolet and User Themes should be ACTIVE.
-A theme under ~/.themes takes precedence over ~/.local/share/themes; check
-the reported path if you have an older copy installed.
+## Included extension preferences
+
+Saved preferences live in `.config/gnome-extension-settings`. The catalog and UUIDs are documented in `extension_options.py`. A preference file is imported only if its extension is selected and available. The installer backs up its old dconf settings before importing it.
+
+To restore a preference, open the relevant backup folder and use the corresponding dconf path. For example:
+
+```sh
+dconf reset -f /org/gnome/shell/extensions/dash-to-dock/
+dconf load /org/gnome/shell/extensions/dash-to-dock/ < extension-settings/dash-to-dock.dconf
+```
+
+Activation changes are backed up in `enabled-extensions.txt`, `disabled-extensions.txt`, and `disable-user-extensions.txt`. The global switch itself is not changed. Restore ordinary configuration files from the backup's `.config` folder, and restore `.bashrc` from its backup to undo the prompt integration.
+
+## Shell theme and dock appearance
+
+The complete ZorinViolet theme is bundled under `.local/share/themes/ZorinViolet`. The top bar styles are in its `gnome-shell/gnome-shell.css`. Copy this hidden directory when moving the dotfiles to another machine.
+
+Select User Themes to apply this theme. For the matching dock, also select Dash to Dock and import its preferences. The dock has 16-pixel rounded corners and violet borders. Its Blur My Shell dock layer is disabled in the saved preferences, avoiding a rectangular surface behind the rounded background. Rounded Window Corners is not required.
+
+If the theme does not appear after login, run:
+
+```sh
+python3 install.py --check
+```
+
+The output shows the theme file, selected theme name, Extensions master switch, and extension status. A theme under `~/.themes` takes precedence over `~/.local/share/themes`; check for an older copy if the wrong stylesheet is selected.
 
 ## Window gaps
 
-Window Padding keeps margins around maximized windows. The installer downloads
-and enables it automatically. Zorin Tiling Shell controls gaps in tiled layouts.
+Select **Window Padding** for margins around maximized windows and **Zorin Tiling Shell** for saved tiling gaps, if the latter is installed. Neither is selected automatically.
 
-The saved values are 4 pixels at the top and 8 pixels at the other screen edges
-for Window Padding, plus 4 pixels for both inner and outer Tiling Shell gaps.
-These values are exported explicitly so another installation uses the same gaps.
-Extension settings can be imported before GNOME discovers newly installed
-extensions. Log out and back in afterward.
-
-## Match the desktop dock
-
-Copy the complete folder, including .config and .local, before running install.py.
-The bundled theme provides 16-pixel rounded corners and violet dock borders.
-The dock preference export disables the fixed, full-width dock appearance and
-uses the bottom auto-hiding Dash to Dock layout. Physical monitor connector
-names are excluded so a VM can use its own display.
-
-The installer enables User Themes, Dash to Dock, Window Padding and Blur My Shell.
-It does not require Rounded Window Corners to round the dock. After installation,
-log out and back in. Run python3 install.py --check to check which extensions
-are installed and enabled.
+Saved Window Padding values are 4 pixels at the top and 8 pixels at the other screen edges. Tiling Shell uses 4 pixels for both inner and outer gaps. Physical monitor connector names are excluded so a VM can use its own display.
 
 ## GDM wallpaper synchronization
 
-Install Violet Windows separately using its install.sh script. In its preferences,
-choose Enable sync under Follow desktop wallpaper. Alternatively, from its
-repository directory, run:
+Install Violet Windows separately with its own `install.sh`. In its preferences choose **Enable sync**, review the listed GDM component, then explicitly approve **Install and enable** before administrator authorization. The terminal alternative is:
 
-    sudo python3 install-gdm.py --sync-wallpaper
+```sh
+sudo python3 install-gdm.py --sync-wallpaper
+```
 
-The installer includes the per-monitor background component, so a fresh Zorin
-VM can follow its own desktop wallpaper. Administrator authorization is needed
-once. Future local wallpaper changes are synchronized automatically.
+That installer has its own default-No confirmation. It installs the GDM background component only after approval; this dotfiles installer never installs it.
 
-The dock uses its rounded themed background with the additional Blur My Shell
-dock layer disabled, avoiding a rectangular surface behind the rounded corners.
+## Kitty font and Bash prompt
 
-## Kitty font and prompt
+Kitty uses `current-theme.conf` and the Cousine font, supplied by `fonts-croscore`. The two-line colored prompt is stored in `.config/bash/violet-prompt.sh`.
 
-Kitty uses the bundled current-theme.conf color palette and the Cousine font.
-The installer includes fonts-croscore to provide the same font in a clean VM.
+The installer backs up `~/.bashrc` and adds a marked block sourcing that file. Running it again updates the same block. To undo the prompt integration, restore `.bashrc` from backup or remove the marked block.
 
-The two-line colored prompt is provided by Bash. Its configuration is stored
-in .config/bash/violet-prompt.sh. The installer backs up ~/.bashrc and adds a
-marked block that sources this file. Running the installer again updates the
-same block. Close and reopen Kitty to load the font and prompt. To undo the
-prompt integration, restore .bashrc from the backup or remove its marked block.
+## Development and tests
+
+- `extension_options.py` contains the catalog, input handling and immutable plans. It performs no I/O except the explicitly supplied prompt/output functions and never runs installation commands.
+- `install.py` applies only the confirmed plan.
+- `tests/test_extension_consent.py` covers default-No behavior, selection, existing extensions, skipped settings, and separate dock consent.
+- `tests/test_activation.py` checks actual GNOME settings using the in-memory backend and installs dotfiles only into temporary folders.
+
+Run the tests without modifying your desktop settings:
+
+```sh
+GSETTINGS_BACKEND=memory python3 -B -m unittest discover -s tests -v
+```
+
+The activation tests refuse to run against a persistent settings backend. The unit tests make no network requests or package installations.

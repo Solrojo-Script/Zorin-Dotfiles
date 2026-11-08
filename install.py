@@ -12,26 +12,17 @@ import urllib.request
 import zipfile
 from pathlib import Path
 
+from extension_options import EXTENSIONS, OPTIONS, choose_plan
+
 PACKAGES = [
     'kitty', 'wofi', 'nautilus', 'fonts-jetbrains-mono', 'fonts-croscore', 'wl-clipboard',
-    'dconf-cli', 'python3-gi', 'gnome-shell-extensions',
+    'dconf-cli', 'python3-gi',
 ]
 FILES = [
     'kitty/kitty.conf', 'kitty/current-theme.conf', 'wofi/config', 'wofi/style.css',
     'gtk-3.0/gtk.css', 'gtk-3.0/settings.ini', 'gtk-4.0/gtk.css', 'gtk-4.0/settings.ini',
     'bash/violet-prompt.sh',
 ]
-EXTENSIONS = {
-    'blur-my-shell': 'blur-my-shell@aunetx',
-    'dash-to-dock': 'dash-to-dock@micxgx.gmail.com',
-    'system-monitor': 'system-monitor@gnome-shell-extensions.gcampax.github.com',
-    'user-theme': 'user-theme@gnome-shell-extensions.gcampax.github.com',
-    'window-padding': 'window-padding@pvlamkhtn.github.io',
-    'zorin-appindicator': 'zorin-appindicator@zorinos.com',
-    'zorin-desktop-icons': 'zorin-desktop-icons@zorinos.com',
-    'zorin-tiling-shell': 'zorin-tiling-shell@zorinos.com',
-}
-REQUIRED_EXTENSIONS = ('dash-to-dock', 'window-padding', 'blur-my-shell')
 
 
 def install_prompt(backup):
@@ -65,9 +56,10 @@ fi
         staged.unlink(missing_ok=True)
 
 
-def install_required_extensions():
+def install_selected_extensions(keys):
+    """Download only missing extensions explicitly selected in a confirmed plan."""
     installed = installed_extension_ids()
-    missing = [EXTENSIONS[name] for name in REQUIRED_EXTENSIONS if EXTENSIONS[name] not in installed]
+    missing = [EXTENSIONS[name] for name in keys if EXTENSIONS[name] not in installed]
     if not missing:
         return
     version = subprocess.check_output(['gnome-shell', '--version'], text=True)
@@ -145,66 +137,65 @@ def install_theme(source, backup):
     print(f'Installed theme in {target}.')
 
 
-def activate_shell_theme(backup):
+def apply_extension_activation(plan, backup):
+    """Change only selected activation entries and explicitly approved dock conflicts.
+
+    The global Extensions switch is deliberately preserved: turning it on would
+    also activate unrelated extensions previously enabled by the user.
+    """
     from gi.repository import Gio
 
+    if not plan.enable and not plan.disable:
+        return
     shell = Gio.Settings.new('org.gnome.shell')
-    # The User Themes schema may not be visible to the current session yet.
-    # Its stored preference can still be selected before the next login.
-    path = '/org/gnome/shell/extensions/user-theme/'
-    previous = subprocess.check_output(['dconf', 'dump', path])
-    directory = backup / 'extension-settings'
-    directory.mkdir(exist_ok=True)
-    (directory / 'user-theme.dconf').write_bytes(previous)
-    (backup / 'enabled-extensions.txt').write_text(
-        shell.get_value('enabled-extensions').print_(True) + '\n')
-    (backup / 'disabled-extensions.txt').write_text(
-        shell.get_value('disabled-extensions').print_(True) + '\n')
-    (backup / 'disable-user-extensions.txt').write_text(
-        shell.get_value('disable-user-extensions').print_(True) + '\n')
-    subprocess.run(['dconf', 'write', path + 'name', "'ZorinViolet'"], check=True)
-    uuid = EXTENSIONS['user-theme']
-    required = [uuid]
+    for key in ('enabled-extensions', 'disabled-extensions', 'disable-user-extensions'):
+        (backup / (key + '.txt')).write_text(shell.get_value(key).print_(True) + '\n')
     installed = installed_extension_ids()
-    required.extend(EXTENSIONS[name] for name in REQUIRED_EXTENSIONS if EXTENSIONS[name] in installed)
-    if EXTENSIONS['window-padding'] not in installed:
-        print('Window Padding is missing. Maximized-window gaps require this extension:')
-        print('https://extensions.gnome.org/extension/11381/window-padding/')
-    enabled = shell.get_strv('enabled-extensions')
-    for extension in required:
-        if extension not in enabled:
-            enabled.append(extension)
-    disabled = [item for item in shell.get_strv('disabled-extensions') if item not in required]
-    # Match the source desktop's dock instead of running two docks together.
-    if EXTENSIONS['dash-to-dock'] in required:
-        conflicts = {'zorin-taskbar@zorinos.com', 'zorin-dash@zorinos.com', 'ubuntu-dock@ubuntu.com'}
-        enabled = [item for item in enabled if item not in conflicts]
-        disabled = list(dict.fromkeys([*disabled, *sorted(conflicts)]))
+    selected = {EXTENSIONS[key] for key in plan.enable if EXTENSIONS[key] in installed}
+    enabled = [uuid for uuid in shell.get_strv('enabled-extensions') if uuid not in plan.disable]
+    enabled.extend(uuid for uuid in sorted(selected) if uuid not in enabled)
+    disabled = [uuid for uuid in shell.get_strv('disabled-extensions') if uuid not in selected]
+    disabled.extend(uuid for uuid in plan.disable if uuid not in disabled)
     if not shell.set_strv('disabled-extensions', disabled):
         raise RuntimeError('GNOME could not update disabled extensions.')
     if not shell.set_strv('enabled-extensions', enabled):
-        raise RuntimeError('GNOME could not enable the required desktop extensions.')
-    if not shell.set_boolean('disable-user-extensions', False):
-        raise RuntimeError('GNOME could not turn on extensions.')
+        raise RuntimeError('GNOME could not enable the selected extensions.')
     Gio.Settings.sync()
-    if shutil.which('gnome-extensions') and shell_is_running():
+    if shell.get_boolean('disable-user-extensions'):
+        print('The global Extensions switch is off. Turn it on in Extensions when you want to use them.')
+    if 'user-theme' in plan.enable and EXTENSIONS['user-theme'] in installed:
+        activate_shell_theme(backup)
+
+
+def activate_shell_theme(backup):
+    """Select and reload the theme only after User Themes was explicitly chosen."""
+    from gi.repository import Gio
+
+    path = '/org/gnome/shell/extensions/user-theme/'
+    directory = backup / 'extension-settings'
+    directory.mkdir(exist_ok=True)
+    (directory / 'user-theme.dconf').write_bytes(subprocess.check_output(['dconf', 'dump', path]))
+    subprocess.run(['dconf', 'write', path + 'name', "'ZorinViolet'"], check=True)
+    shell = Gio.Settings.new('org.gnome.shell')
+    uuid = EXTENSIONS['user-theme']
+    if not shell.get_boolean('disable-user-extensions') and shell_is_running():
         environment = {**os.environ, 'LC_ALL': 'C'}
         status = subprocess.run(['gnome-extensions', 'info', uuid],
                                 capture_output=True, text=True, env=environment)
         if status.returncode == 0:
-            # Reload an already loaded theme after replacing its stylesheet.
-            subprocess.run(['gnome-extensions', 'disable', uuid],
-                           capture_output=True, env=environment)
-            enabled_result = subprocess.run(['gnome-extensions', 'enable', uuid],
-                                            capture_output=True, env=environment)
-            if enabled_result.returncode:
-                shell.set_strv('enabled-extensions', enabled)
-                shell.set_strv('disabled-extensions', disabled)
+            subprocess.run(['gnome-extensions', 'disable', uuid], capture_output=True, env=environment)
+            result = subprocess.run(['gnome-extensions', 'enable', uuid], capture_output=True, env=environment)
+            if result.returncode:
+                # Keep the user's confirmed selection ready for the next login.
+                enabled = shell.get_strv('enabled-extensions')
+                if uuid not in enabled:
+                    shell.set_strv('enabled-extensions', [*enabled, uuid])
+                shell.set_strv('disabled-extensions', [item for item in shell.get_strv('disabled-extensions') if item != uuid])
                 Gio.Settings.sync()
                 print('GNOME could not reload User Themes. Log out and back in.')
         else:
-            print('User Themes is not discovered by this session yet. Log out and back in.')
-    print('ZorinViolet selected. Run python3 install.py --check to check theme activation.')
+            print('User Themes will be discovered at the next login.')
+    print('ZorinViolet selected for the explicitly chosen User Themes extension.')
 
 
 def check_theme():
@@ -226,9 +217,9 @@ def check_theme():
     print(f'User Themes enabled: {uuid in shell.get_strv("enabled-extensions")}')
     print(f'User Themes explicitly disabled: {uuid in shell.get_strv("disabled-extensions")}')
     installed = installed_extension_ids()
-    for name in REQUIRED_EXTENSIONS:
-        uuid = EXTENSIONS[name]
-        print(f'{name} installed: {uuid in installed}; enabled: {uuid in shell.get_strv("enabled-extensions")}')
+    for option in OPTIONS:
+        uuid = option.uuid
+        print(f'{option.name} installed: {uuid in installed}; enabled: {uuid in shell.get_strv("enabled-extensions")}')
     if shutil.which('gnome-extensions') and shell_is_running():
         subprocess.run(['gnome-extensions', 'info', uuid],
                        env={**os.environ, 'LC_ALL': 'C'})
@@ -236,14 +227,17 @@ def check_theme():
         print('Live GNOME session unavailable. Log in to GNOME and repeat this check.')
 
 
-def restore_extension_settings(source, backup):
+def restore_extension_settings(source, backup, selected):
+    """Import saved preferences only for the explicitly selected extensions."""
+    if not selected:
+        return
     if not shutil.which('dconf'):
         print('Extension settings skipped. dconf is unavailable.')
         return
     installed = installed_extension_ids()
     for settings in sorted((source / '.config/gnome-extension-settings').glob('*.dconf')):
         name = settings.stem
-        if name == 'user-theme':
+        if name not in selected or name == 'user-theme':
             continue  # Applied separately, including on a fresh GNOME session.
         if EXTENSIONS.get(name) not in installed:
             print(f'Skipped {name}. The extension is not installed.')
@@ -257,13 +251,18 @@ def restore_extension_settings(source, backup):
         print(f'Imported settings for {name}.')
 
 
-def main():
+def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--dry-run', action='store_true')
     parser.add_argument('--skip-packages', action='store_true')
     parser.add_argument('--skip-extension-settings', action='store_true')
     parser.add_argument('--check', action='store_true', help='show theme activation status without changing settings')
-    args = parser.parse_args()
+    selection = parser.add_mutually_exclusive_group()
+    selection.add_argument('--extensions', metavar='KEYS', help='explicit comma-separated extension keys or menu numbers')
+    selection.add_argument('--skip-extensions', action='store_true', help='skip all extension downloads, activation and preference changes')
+    parser.add_argument('--yes', action='store_true', help='confirm an explicit extension selection; never selects extensions')
+    parser.add_argument('--replace-dock', action='store_true', help='explicitly allow disabling listed conflicting docks when selecting Dash to Dock')
+    args = parser.parse_args(argv)
     if os.geteuid() == 0:
         parser.exit(1, 'Run as your desktop user. Only package installation uses sudo.\n')
     if args.check:
@@ -277,28 +276,36 @@ def main():
             parser.exit(1, f'Missing source file: {name}\n')
     if not (source / '.local/share/themes/ZorinViolet/gnome-shell/gnome-shell.css').is_file():
         parser.exit(1, 'Missing bundled ZorinViolet theme. Copy the complete dotfiles directory.\n')
+    from gi.repository import Gio
+    shell = Gio.Settings.new('org.gnome.shell')
+    installed = installed_extension_ids()
+    enabled = set(shell.get_strv('enabled-extensions')) - set(shell.get_strv('disabled-extensions'))
+    try:
+        plan = choose_plan(installed, enabled, requested=args.extensions,
+                           skip=args.skip_extensions, assume_yes=args.yes, dry_run=args.dry_run,
+                           allow_downloads=not args.skip_packages,
+                           import_settings=not args.skip_extension_settings,
+                           replace_dock=args.replace_dock)
+    except ValueError as error:
+        parser.error(str(error))
     if args.dry_run:
         if not args.skip_packages:
-            print('Install packages: ' + ', '.join(PACKAGES))
-            print('Install missing Dash to Dock, Window Padding and Blur My Shell from extensions.gnome.org.')
+            print('Install application dependencies: ' + ', '.join(PACKAGES))
         for name in FILES:
             print(f'Copy {name} to {config / name}')
-        print('Install the bundled ZorinViolet theme and enable User Themes.')
+        print('Copy the bundled ZorinViolet theme; activate it only when User Themes was selected.')
         print('Add the bundled Bash prompt to ~/.bashrc, with a backup.')
         print(f'Backups will be stored under {state / "zorin-violet-dotfiles"}')
-        if not args.skip_extension_settings:
-            print('Import saved preferences for installed GNOME extensions.')
+        print('Dry run: no packages, extensions, settings or files were changed.')
         return
     if not args.skip_packages:
         if not shutil.which('apt-get'):
             parser.exit(1, 'Package installation requires apt-get (Zorin OS / Ubuntu).\n')
         subprocess.run(['sudo', 'apt-get', 'update'], check=True)
         subprocess.run(['sudo', 'apt-get', 'install', '-y', *PACKAGES], check=True)
-        install_required_extensions()
+    install_selected_extensions(plan.install)
     if not shutil.which('dconf'):
         parser.exit(1, 'Install dconf-cli before using --skip-packages.\n')
-    from gi.repository import Gio
-    Gio.Settings.new('org.gnome.shell')  # Validate the GNOME settings dependency before copying files.
 
     backups = state / 'zorin-violet-dotfiles'
     backups.mkdir(parents=True, exist_ok=True)
@@ -329,8 +336,8 @@ def main():
             staged.unlink(missing_ok=True)
     install_prompt(backup)
     if not args.skip_extension_settings:
-        restore_extension_settings(source, backup)
-    activate_shell_theme(backup)
+        restore_extension_settings(source, backup, plan.configure)
+    apply_extension_activation(plan, backup)
     print('Installed. Restart Kitty and Wofi. Log out and back in to reload desktop styling.')
 
 
